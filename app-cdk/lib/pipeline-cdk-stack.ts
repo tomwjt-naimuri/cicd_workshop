@@ -1,12 +1,17 @@
-import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
+import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { aws_codeconnections as codeconnections } from 'aws-cdk-lib';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as codepipeline_actions from 'aws-cdk-lib/aws-codepipeline-actions';
+import * as ecr from 'aws-cdk-lib/aws-ecr';
+
+interface ConsumerProps extends StackProps {
+  ecrRepository: ecr.Repository;
+}
 
 export class PipelineCdkStack extends Stack {
-  constructor(scope: Construct, id: string, props: StackProps) {
+  constructor(scope: Construct, id: string, props: ConsumerProps) {
     super(scope, id, props);
 
     const SourceConnection = new codeconnections.CfnConnection(this, 'CICD_Workshop_Connection', {
@@ -21,16 +26,18 @@ export class PipelineCdkStack extends Stack {
       executionMode: codepipeline.ExecutionMode.QUEUED,
     });
 
-    const codeBuild = new codebuild.PipelineProject(this, 'CodeBuild', {
-      buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec_test.yml'),
-      environment: {
-        buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
-        privileged: true,
-        computeType: codebuild.ComputeType.LARGE,
-      },
-    });
-
-    // more more butts
+    const codeBuild = new codebuild.PipelineProject(
+      this,
+      'CodeBuild',
+      {
+        environment: {
+          buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
+          privileged: true,
+          computeType: codebuild.ComputeType.LARGE,
+        },
+        buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec_test.yml'),
+      }
+    );
 
     const sourceOutput = new codepipeline.Artifact();
     const unitTestOutput = new codepipeline.Artifact();
